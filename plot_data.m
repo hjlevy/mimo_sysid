@@ -117,53 +117,26 @@ title('Singular Values of H100');
 
 %iterating through different state dims 
 state_dim = [6,7,10,40];
-An ={0}; Bn = {0}; Cn = {0}
+An ={0}; Bn = {0}; Cn = {0}; Dn = {0};
 for i = 1:length(state_dim)
     nmod = state_dim(i);
-    %taking the svd of the H100 matrix and decreasing to new state dim
-    [U,S,V] = svd(H100);
-    U1 = U(:,1:nmod); 
-    S1 = S(1:nmod,1:nmod); 
-    V1 = V(:,1:nmod);
-
-    %creating a new hankel matrix based on lower state dim
-    Hnew = U1*S1*(V1');
     
-    %Observability and Controllability
-    O = U1*diag(sqrt(diag(S1)));
-    C = diag(sqrt(diag(S1)))*V1';
-    %C matrix in state model
-    Css = O(1:2,:);
-    Cn{i} = Css;
-    %B matrix in state model
-    Bss = C(:,1:2);
-    Bn{i} = Bss;
-
-    %A matrix creation in state model
-    Oleft = inv(diag(sqrt(diag(S1))))*U1';
-    Cright = V1*inv(diag(sqrt(diag(S1))));
-    Ass = Oleft*Htil*Cright;
-    An{i} = Ass;
-    
-    %checking stability 
-    stab_check = max(abs(eig(Ass)));
-    fprintf('Maximum eigenvalue of A for ns = %d, lambda = %4.3f\n',...
-            nmod,stab_check);
+    [An{i},Bn{i},Cn{i},Dn{i}] = model_generator(H100,Htil,nmod);
 
     %simulating response to u1 = [1;0]
     h1 = zeros(2,100);
-    x1 = Bss*[1;0]; %value x at k = 1
+    x1 = Bn{i}*[1;0]; %value x at k = 1
     for k = 1:100
-        h1(:,k) = Css*x1;
-        x1 = Ass*x1;
+        h1(:,k) = Cn{i}*x1;
+        x1 = An{i}*x1;
     end
     
     %simulating response to u2 = [0;1]
     h2 = zeros(2,100);
-    x2 = Bss*[0;1]; %value x at k = 1
+    x2 = Bn{i}*[0;1]; %value x at k = 1
     for k = 1:100
-        h2(:,k) = Css*x2;
-        x2 = Ass*x2;
+        h2(:,k) = Cn{i}*x2;
+        x2 = An{i}*x2;
     end
     tsim = [1:100]*ts;
 
@@ -368,9 +341,9 @@ set(gca,'XScale', 'log');
 xlim([0 20]);
 
 %% Task 2
-%finding transmission zeros of state model 7
+%2.1 finding transmission zeros of state model 7
 ns = 7;
-A7 = An{2}; C7 = Cn{2}; B7 = Bn{2}; D7 = zeros(2,2);
+A7 = An{2}; C7 = Cn{2}; B7 = Bn{2}; D7 = Dn{2};
 
 %Constructing M matrix
 %M = [A7 B7; -C7 -D7]
@@ -386,9 +359,12 @@ z = eig(M,diag([ones(7,1);zeros(2,1)]));
 z = sort(z,'descend'); %sorting from greatest magnitude to least 
 z = z(5:9,1); %removing infinity values
 
+%2.2 plotting eigenvalues and tzeros
 %eigenvalues of the system
 lam = eig(A7);
-plot(real(z),imag(z),'o',real(lam),imag(lam),'x'); hold on;
+figure;
+plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); hold on;
+title('Discrete Eigenvalues and Transmission Zeros');
 
 %plotting circle radius 1
 th = linspace(0,2*pi); r = 1;
@@ -397,4 +373,110 @@ y_circ = r*sin(th);
 plot(x_circ,y_circ,'k--');
 axis equal;grid on;
 
-lamc = log(lam)./ts
+%2.3 continuous time eigenvalues
+lamc = log(lam)./ts;
+%minimizing the omega by 2pik/ts for ones with imaginary part
+%frequency bounded by [-pi/ts; pi/ts] rad/s which they already are
+
+figure;
+plot(real(lamc),imag(lamc),'rx'); hold on;
+axis square ;grid on;
+title('Continuous Eigenvalues');
+
+fprintf('From the set of lam_c we see there are two damped oscillators:\n')
+disp('lam_c =');disp(lamc(1:4));
+fprintf('Their natural frequences are %4.3f and %4.3f Hz \n',...
+        imag(lamc(1))/(2*pi),imag(lamc(3))/(2*pi));
+fprintf(['These frequencies look like the approximate cut-off',... 
+        'frequencies of the frequency responses\n']);
+ 
+%% Transmission Zeros for Each Channel (2.4)
+%creating b1 b2 and c1 c2
+b7_1 = B7(:,1); b7_2 = B7(:,2);
+c7_1 = C7(1,:); c7_2 = C7(2,:);
+
+%Channel 1
+M7_1 = zeros(8,8);
+M7_1(1:ns,1:ns) = A7;
+M7_1(1:ns,ns+1:end) = b7_1;
+M7_1(ns+1:end,1:ns) = -c7_1;
+M7_1(ns+1:end,ns+1:end) = 0;
+
+%trasmission zeros of channel 1
+z = eig(M7_1,diag([ones(7,1);0]));
+z = sort(z,'descend'); %sorting from greatest magnitude to least 
+z = z(3:end); %removing inf values
+
+figure;
+plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); hold on;
+title('Channel 1: Discrete Eigenvalues and Transmission Zeros nmod=7');
+
+%analyzing pole, zero cancellations from figure
+%oscillators have real part and imaginary part
+%remember e^(sig+jw)t = e^(sigt)(sinwt+coswt)
+fprintf('Channel 1 has one oscillator and one LP Filter\n')
+fprintf('This means this channel can be represented by 2 states.\n')
+
+
+%Channel 2
+M7_2 = zeros(8,8);
+M7_2(1:ns,1:ns) = A7;
+M7_2(1:ns,ns+1:end) = b7_2;
+M7_2(ns+1:end,1:ns) = -c7_2;
+M7_2(ns+1:end,ns+1:end) = 0;
+
+%transmission zeros of channel 2
+z = eig(M7_2,diag([ones(7,1);0]));
+z = sort(z,'descend'); %sorting from greatest magnitude to least 
+z = z(3:end); %removing inf values
+
+figure;
+plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); hold on;
+title('Channel 2: Discrete Eigenvalues and Transmission Zeros nmod=7');
+
+%analyzing pole, zero cancellations from figure
+fprintf('Channel 2 has one oscillator and two LP Filter.\n')
+fprintf('This means this channel can be represented by 3 states.\n')
+
+%#4 WHAT ARE HANKEL SINGULAR VALUES OF EACH CHANNEL ?
+
+%% Pole-Zero plot for nmod = 8
+ns = 8;
+[A8,B8,C8,D8] = model_generator(H100,Htil,ns);
+
+%channel 1 M
+M8 = zeros(9,9);
+M8(1:ns,1:ns) = A8;
+M8(1:ns,ns+1:end) = B8(:,1);
+M8(ns+1:end,1:ns) = -C8(1,:);
+M8(ns+1:end,ns+1:end) = 0;
+
+%transmission zeros of channel 1
+z = eig(M8,diag([ones(8,1);0]));
+z = sort(z,'descend'); %sorting from greatest magnitude to least 
+z = z(3:end); %removing inf values
+
+lam = eig(A8);
+figure;
+plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); hold on;
+title('Channel 1: Discrete Eigenvalues and Transmission Zeros nmod=8');
+%pole zero cancellation analysis
+fprintf('Channel 1 of model dimension 8 only requires 2 states');
+
+%channel 2 M
+M8 = zeros(9,9);
+M8(1:ns,1:ns) = A8;
+M8(1:ns,ns+1:end) = B8(:,2);
+M8(ns+1:end,1:ns) = -C8(2,:);
+M8(ns+1:end,ns+1:end) = 0;
+
+%transmission zeros of channel 2
+z = eig(M8,diag([ones(8,1);0]));
+z = sort(z,'descend'); %sorting from greatest magnitude to least 
+z = z(3:end); %removing inf values
+
+figure;
+plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); hold on;
+title('Channel 2: Discrete Eigenvalues and Transmission Zeros nmod=8');
+%pole zero cancellation analysis
+fprintf('Channel 2 of model dimension 8 only requires 3 states');
