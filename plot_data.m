@@ -367,4 +367,34 @@ plot(om,unwrap(angle((y22f)))*180/pi);
 set(gca,'XScale', 'log');
 xlim([0 20]);
 
+%% Task 2
+%finding transmission zeros of state model 7
+ns = 7;
+A7 = An{2}; C7 = Cn{2}; B7 = Bn{2}; D7 = zeros(2,2);
 
+%Constructing M matrix
+%M = [A7 B7; -C7 -D7]
+M = zeros(9,9);
+M(1:ns,1:ns) = A7;
+M(1:ns,ns+1:end) = B7;
+M(ns+1:end,1:ns) = -C7;
+M(ns+1:end,ns+1:end) = -D7;
+
+%finding transmission zeros from M
+%Mv = z[I 0;0 0]v
+z = eig(M,diag([ones(7,1);zeros(2,1)]));
+z = sort(z,'descend'); %sorting from greatest magnitude to least 
+z = z(5:9,1); %removing infinity values
+
+%eigenvalues of the system
+lam = eig(A7);
+plot(real(z),imag(z),'o',real(lam),imag(lam),'x'); hold on;
+
+%plotting circle radius 1
+th = linspace(0,2*pi); r = 1;
+x_circ = r*cos(th);
+y_circ = r*sin(th);
+plot(x_circ,y_circ,'k--');
+axis equal;grid on;
+
+lamc = log(lam)./ts
