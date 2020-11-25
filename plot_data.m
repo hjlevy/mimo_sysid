@@ -2,7 +2,7 @@
 %Helene Levy
 clear; close all; clc;
 %disabling response figure generation code
-plot_resp = true;
+plot_resp = false;
 
 %% Loading and "massaging" initial data
 load u1_impulse.mat
@@ -368,7 +368,7 @@ disp('lam_c =');disp(lamc(1:4));
 fprintf('Their natural frequences are %4.3f and %4.3f Hz \n',...
         imag(lamc(1))/(2*pi),imag(lamc(3))/(2*pi));
 fprintf(['These frequencies look like the approximate cut-off ',... 
-        'frequencies of the frequency responses\n']);
+        'frequencies of the frequency responses\n\n']);
  
 %% Transmission Zeros for Each Channel (2.4)
 %creating b1 b2 and c1 c2
@@ -379,9 +379,13 @@ c7_1 = C7(1,:); c7_2 = C7(2,:);
 [z11,lam11] = tzero_lam_gen(A7,b7_1,c7_1,0);
 title(sprintf(['Channel (1,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
-fprintf('2 state model: one oscillator and one LP filter in channel (1,1)\n');
-H2 = hankel_1n(u1,y1,2);
-disp(svd(H2));
+fprintf(['3 state model: one oscillator and '...
+        'one LP filter in channel (1,1)\n']);
+
+%determining channel's singular values
+H_11 = hankel_1n(u1,y11,100,3);
+sig = svd(H_11);
+disp('Singular Values for Channel (1,1):'); disp(sig(1:3));
 
 %Channel (2,1) y2,u1
 [z21,lam21] = tzero_lam_gen(A7,b7_1,c7_2,0);
@@ -389,17 +393,34 @@ title(sprintf(['Channel (2,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 fprintf('2 state model: one LP and one HP filter in channel (2,1)\n');
 
+%determining channel's singular values
+H_21 = hankel_1n(u1,y21,100,2);
+sig = svd(H_21);
+disp('Singular Values for Channel (2,1):'); disp(sig(1:2));
+
 %Channel (1,2) y1,u2
 [z12,lam12] = tzero_lam_gen(A7,b7_2,c7_1,0);
 title(sprintf(['Channel (1,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
-fprintf('2 state model: one oscillator and one LP filter in channel (1,2)\n');
+fprintf(['3 state model: one oscillator and one '...
+        'LP filter in channel (1,2)\n']);
+ 
+%determining channel's singular values
+H_12 = hankel_1n(u2,y12,100,3);
+sig = svd(H_12);
+disp('Singular Values for Channel (1,2):'); disp(sig(1:3));
 
 %Channel (2,2) y2,u2
 [z22,lam22] = tzero_lam_gen(A7,b7_2,c7_2,0);
 title(sprintf(['Channel (2,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
-fprintf('3 state model: one oscillator and one LP filter, one HP filter in channel (1,1)\n');
+fprintf(['4 state model: one oscillator and one LP filter, '...
+        'one HP filter in channel (2,2)\n']);
+
+%determining channel's singular values
+H_22 = hankel_1n(u2,y22,100,4);
+sig = svd(H_22);
+disp('Singular Values for Channel (2,2):'); disp(sig(1:4));
 
 %#4 WHAT ARE HANKEL SINGULAR VALUES OF EACH CHANNEL ?
 
@@ -431,3 +452,15 @@ title(sprintf(['Channel (1,2): Discrete Eigenvalues and',...
 title(sprintf(['Channel (2,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
+%% Task 4
+load u_rand.mat
+y1 = u_rand.Y(3).Data;
+y2 = u_rand.Y(4).Data;
+u1 = u_rand.Y(1).Data;
+u2 = u_rand.Y(2).Data;
+ts = 1/40;
+N = length(y1);
+t = [0:N-1]*ts - 1;
+
+mean(u1)
+mean(u2)

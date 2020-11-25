@@ -1,5 +1,5 @@
-function [H,Htil] = hankel_1n(u,y,nr)
-%finding Hankel Matrix for 2 input 2 output system
+function [Hnew,H] = hankel_1n(u,y,nr,nmod)
+%finding Hankel Matrix for 1 input 1 output system
 ind_off = find(u); %finds the index of the first non zero value
 
 nc = nr;
@@ -12,4 +12,13 @@ for k = 1:nr
     H(k,:)=y(ind);
     Htil(k,:)=y(ind+1);
 end
+
+%taking the svd of the H100 matrix and decreasing to new state dim
+[U,S,V] = svd(H);
+Un = U(:,1:nmod); 
+Sn = S(1:nmod,1:nmod); 
+Vn = V(:,1:nmod);
+
+%creating a new hankel matrix based on lower state dim
+Hnew = Un*Sn*(Vn');
 end
