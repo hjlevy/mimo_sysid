@@ -1,8 +1,6 @@
 %MAE 270A Project 
 %Helene Levy
 clear; close all; clc;
-%disabling response figure generation code
-plot_resp = false;
 
 %% Loading and "massaging" initial data
 load u1_impulse.mat
@@ -76,7 +74,7 @@ t = [0:N-1]*ts - 1;
 % xlabel('second','FontSize',14)
 % set(gca,'FontSize',14)
 % axis([-0.2 2 -0.1 0.1])
-
+% 
 
 %% Task 1 
 %joining matrices of data representing same input
@@ -116,32 +114,33 @@ ylabel('Hankel singular value');
 title('Singular Values of H100');
 
 %% Simulating Impulse Response of Each State Model
-if(plot_resp)
-    %iterating through different state dims 
-    state_dim = [6,7,10,40];
-    An ={0}; Bn = {0}; Cn = {0}; Dn = {0};
-    for i = 1:length(state_dim)
-        nmod = state_dim(i);
+plot_resp = true; %change to false if don't want to plot
+%iterating through different state dims 
+state_dim = [6,7,10,40];
+An ={0}; Bn = {0}; Cn = {0}; Dn = {0};
+for i = 1:length(state_dim)
+    nmod = state_dim(i);
 
-        [An{i},Bn{i},Cn{i},Dn{i}] = model_generator(H100,Htil,nmod);
+    [An{i},Bn{i},Cn{i},Dn{i}] = model_generator(H100,Htil,nmod);
 
-        %simulating response to u1 = [1;0]
-        h1 = zeros(2,100);
-        x1 = Bn{i}*[1;0]; %value x at k = 1
-        for k = 1:100
-            h1(:,k) = Cn{i}*x1;
-            x1 = An{i}*x1;
-        end
+    %simulating response to u1 = [1;0]
+    h1 = zeros(2,100);
+    x1 = Bn{i}*[1;0]; %value x at k = 1
+    for k = 1:100
+        h1(:,k) = Cn{i}*x1;
+        x1 = An{i}*x1;
+    end
 
-        %simulating response to u2 = [0;1]
-        h2 = zeros(2,100);
-        x2 = Bn{i}*[0;1]; %value x at k = 1
-        for k = 1:100
-            h2(:,k) = Cn{i}*x2;
-            x2 = An{i}*x2;
-        end
-        tsim = [1:100]*ts;
+    %simulating response to u2 = [0;1]
+    h2 = zeros(2,100);
+    x2 = Bn{i}*[0;1]; %value x at k = 1
+    for k = 1:100
+        h2(:,k) = Cn{i}*x2;
+        x2 = An{i}*x2;
+    end
+    tsim = [1:100]*ts;
 
+    if(plot_resp)
         %plotting each input/output response combo
         figure
         subplot(211)
@@ -173,53 +172,34 @@ if(plot_resp)
         ylabel('y2');
         xlabel('time (s)');
     end
-    fprintf('State dimension 6 has an inferior reproduction of the data\n');
 end
+fprintf('State dimension 6 has an inferior reproduction of the data\n');
 
 %% Creating and Plotting Model Frequency Response 
+plot_fresp = true; %change to false if don't want to plot
 
-if(plot_resp)
-    %plotting bode diagrams for different model order
-    N_w = 100;
-    w_span = linspace(0,20,N_w); %omega span in hertz
-    %iterating through different state dimensions
-    for k = 1:length(state_dim)
-
-        %preallocating values to 0
-        P11_mag = zeros(N_w,1);
-        P12_mag = zeros(N_w,1);
-        P21_mag = zeros(N_w,1);
-        P22_mag = zeros(N_w,1);
-        P11_ph = zeros(N_w,1);
-        P12_ph = zeros(N_w,1);
-        P21_ph = zeros(N_w,1);
-        P22_ph = zeros(N_w,1);
-
-        %function creating model based on each A,B,C matrix of state model
-        %ex Cn = {{C6},{C7},{C10},{C40}}
-        for i = 1:N_w
-            %from equation of state C(e^jwtsI-A)^-1*B
-            %making sure to convert w_span into rad/s for model analysis
-            P = Cn{k}*inv(exp(1j*2*pi*w_span(i)*ts).*eye(size(An{k}))-An{k})...
-                *Bn{k};
-
-            %extracting freq model for y11
-            P11_mag(i) = 20*log10(abs(P(1,1))); 
-            P11_ph(i) = unwrap(angle(P(1,1)))*180/pi;
-
-            %extracting freq model for y21
-            P21_mag(i) = 20*log10(abs(P(2,1)));
-            P21_ph(i) = unwrap(angle(P(2,1)))*180/pi;
-
-            %extracting freq model for y12
-            P12_mag(i) = 20*log10(abs(P(1,2)));
-            P12_ph(i) = unwrap(angle(P(1,2)))*180/pi;
-
-            %extracting freq model for y22
-            P22_mag(i) = 20*log10(abs(P(2,2)));
-            P22_ph(i) = unwrap(angle(P(2,2)))*180/pi;
-        end
-
+%plotting bode diagrams for different model order
+N_w = 200;
+w_span = linspace(0,20,N_w); %omega span in hertz
+%iterating through different state dimensions
+for k = 1:length(state_dim)
+    P = ss(An{k},Bn{k},Cn{k},Dn{k},ts);
+    [P11_mag,P11_ph] = bode(P(1,1),2*pi*w_span);
+    P11_mag = 20*log10(squeeze(P11_mag));
+    P11_ph = squeeze(P11_ph);
+    
+    [P12_mag,P12_ph] = bode(P(1,2),2*pi*w_span);
+    P12_mag = 20*log10(squeeze(P12_mag));
+    P12_ph = squeeze(P12_ph);
+    
+    [P21_mag,P21_ph] = bode(P(2,1),2*pi*w_span);
+    P21_mag = 20*log10(squeeze(P21_mag));
+    P21_ph = squeeze(P21_ph);
+    
+    [P22_mag,P22_ph] = bode(P(2,2),2*pi*w_span);
+    P22_mag = 20*log10(squeeze(P22_mag));
+    P22_ph = squeeze(P22_ph);
+    if plot_fresp
         %plotting model freq resp
         figure (11)
         subplot(211)
@@ -283,8 +263,9 @@ if(plot_resp)
     end
 end
 
+
 %% Plotting Empirical Frequency Response 
-if(plot_resp)
+if(plot_fresp)
     figure (11);
     subplot(211)
     y11f = fft(y11)./fft(u1);
@@ -346,7 +327,7 @@ if(plot_resp)
     xlim([0 20]);
 end
 
-%% Task 2
+%% Task 2: Transmission Zeros of MIMO Model
 %2.1 finding transmission zeros of state model 7
 ns = 7;
 [A7,B7,C7,D7] = model_generator(H100,Htil,ns);
@@ -370,7 +351,7 @@ fprintf('Their natural frequences are %4.3f and %4.3f Hz \n',...
 fprintf(['These frequencies look like the approximate cut-off ',... 
         'frequencies of the frequency responses\n\n']);
  
-%% Transmission Zeros for Each Channel (2.4)
+%% Transmission Zeros for Each Channel 
 %creating b1 b2 and c1 c2
 b7_1 = B7(:,1); b7_2 = B7(:,2);
 c7_1 = C7(1,:); c7_2 = C7(2,:);
@@ -452,15 +433,158 @@ title(sprintf(['Channel (1,2): Discrete Eigenvalues and',...
 title(sprintf(['Channel (2,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
-%% Task 4
+%% Task 4: Impulse Response ID from White Noise Inputs
+%parameters
 load u_rand.mat
 y1 = u_rand.Y(3).Data;
 y2 = u_rand.Y(4).Data;
-u1 = u_rand.Y(1).Data;
-u2 = u_rand.Y(2).Data;
+u1_rand = u_rand.Y(1).Data;
+u2_rand = u_rand.Y(2).Data;
 ts = 1/40;
 N = length(y1);
-t = [0:N-1]*ts - 1;
+t2 = [0:N-1]*ts - 1;
 
-mean(u1)
-mean(u2)
+%remove any offsets from output data
+y1 = y1 - mean(y1);
+y2 = y2 - mean(y2);
+
+u = [u1_rand;u2_rand];
+y = [y1;y2];
+
+%% Autocorrelation of u and plots
+plot_auto = true; %change to false if don't want plots
+
+%preallocations
+% want k[-200,200] so give a 100 index offset on either end of data
+q_min = 300; 
+q_max = length(u1_rand)-300;
+N = length(q_min:q_max)-1;
+
+Ruu = zeros(2,401*2);
+for i = 1:401
+    %k in [-200, 200]
+    k = i-201;
+    
+    %preallocation
+    sum_Ruu = zeros(2,2);
+    
+    for q = q_min: q_max
+        %summing each uk+q*uq^T over q set
+        sum_Ruu = 1/(N)*(u(:,k+q)*u(:,q)')+sum_Ruu;
+    end
+    Ruu(:,2*i-1:2*i) = sum_Ruu;
+end
+Tau = linspace(-5,5,length(Ruu)/2);
+
+%plotting autocorrelation graphs
+if plot_auto
+    figure;
+    sgtitle('Autocorrelation of Inputs');
+    subplot(221);
+    %autocorr u1u1
+    plot(Tau,Ruu(1,1:2:end)); hold on;
+    axis([-5 5 -1 4]);
+    xlabel('Lag Time, \tau');
+    ylabel('Ruu');
+    title('u1u1');
+
+    %autocorr u1u2
+    subplot(222);
+    plot(Tau,Ruu(1,2:2:end)); hold on;
+    axis([-5 5 -1 1]);
+    xlabel('Lag Time, \tau');
+    ylabel('Ruu');
+    title('u1u2');
+
+    %autocorr u2u1
+    subplot(223);
+    plot(Tau,Ruu(2,1:2:end)); hold on;
+    axis([-5 5 -1 1]);
+    xlabel('Lag Time, \tau');
+    ylabel('Ruu');
+    title('u2u1');
+
+    %autocorr u2u2
+    subplot(224);
+    plot(Tau,Ruu(2,2:2:end)); hold on;
+    axis([-5 5 -1 4]);
+    xlabel('Lag Time, \tau');
+    ylabel('Ruu');
+    title('u2u2');
+end
+%variance of input matrix (Ruu[0]);
+V = Ruu(:,401:402);
+disp('Ruu[0]=');disp(V);
+fprintf('This indicates a variance of ~4 for each input channel\n');
+
+%% Cross correlation of u,y and plots
+plot_cross = true; %change to false if don't want plots
+
+%preallocations
+% want k[-200,200] so give a 100 index offset on either end of data
+q_min = 300; 
+q_max = length(u1_rand)-300;
+N = length(q_min:q_max)-1;
+
+Ruu = zeros(2,401*2);
+%lag time corresponds to T = k*ts -> k = Tbound/ts
+kmin = -0.2/ts; kmax= 2/ts;
+for i = 1:kmax-kmin+1
+    %k in [-200, 200]
+    %k is [-0.2/ts,2/ts]
+    k = i+(kmin-1);
+    
+    %preallocation
+    sum_Ryu = zeros(2,2);
+    
+    for q = q_min: q_max
+        %summing each uk+q*uq^T over q set
+        sum_Ryu = 1/(N)*(y(:,k+q)*u(:,q)')+sum_Ryu;
+    end
+    Ryu(:,2*i-1:2*i) = sum_Ryu;
+end
+%normalizing columns by variance of u1 data
+Ryu(:,1:2:end) = Ryu(:,1:2:end)/(V(1,1));
+
+%normalizing columns by variance of u2 data
+Ryu(:,2:2:end) = Ryu(:,2:2:end)/(V(2,2));
+Tau = linspace(-0.2,2,length(Ryu)/2);
+
+%plotting cross correlation graphs
+if plot_cross
+    figure;
+    %crosscorr y1u1
+    plot(Tau,Ryu(1,1:2:end),'b*',t,y11,'r*'); 
+    axis([0 1 -0.1 0.1]);
+    xlabel('time');
+    ylabel('y11');
+    legend('Ryu','pulse exp');
+    title('Cross Correlation y1,u1');
+
+    %crosscorr y1u2
+    figure;
+    plot(Tau,Ryu(1,2:2:end),'b*',t,y12,'r*'); 
+    axis([0 1 -0.1 0.1]);
+    xlabel('time');
+    ylabel('y12');
+    legend('Ryu','pulse exp');
+    title('Cross Correlation y1,u2');
+
+    %crosscorr y2u1
+    figure;
+    plot(Tau,Ryu(2,1:2:end),'b*',t,y21,'r*'); 
+    axis([0 1 -0.1 0.1]);
+    xlabel('time');
+    ylabel('y21');
+    legend('Ryu','pulse exp');
+    title('Cross Correlation y2,u1');
+
+    %crosscorr y2u2
+    figure;
+    plot(Tau,Ryu(2,2:2:end),'b*',t,y22,'r*');
+    axis([0 1 -0.1 0.1]);
+    xlabel('time');
+    ylabel('y22');
+    legend('Ryu','pulse exp');
+    title('Cross Correlation y2,u2');
+end
