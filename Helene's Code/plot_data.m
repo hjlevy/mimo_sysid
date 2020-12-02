@@ -114,7 +114,7 @@ ylabel('Hankel singular value');
 title('Singular Values of H100');
 
 %% Simulating Impulse Response of Each State Model
-plot_resp = true; %change to false if don't want to plot
+plot_resp = false; %change to false if don't want to plot
 %iterating through different state dims 
 state_dim = [6,7,10,40];
 An ={0}; Bn = {0}; Cn = {0}; Dn = {0};
@@ -176,7 +176,7 @@ end
 fprintf('State dimension 6 has an inferior reproduction of the data\n');
 
 %% Creating and Plotting Model Frequency Response 
-plot_fresp = true; %change to false if don't want to plot
+plot_fresp = false; %change to false if don't want to plot
 
 %plotting bode diagrams for different model order
 N_w = 200;
@@ -588,3 +588,63 @@ if plot_cross
     legend('Ryu','pulse exp');
     title('Cross Correlation y2,u2');
 end
+
+%% Autocorrelation of y (scaled)
+y_scale = y/2;
+plot_auto = true; %change to false if don't want plots
+
+%preallocations
+% want k[-200,200] so give a 100 index offset on either end of data
+q_min = 300; 
+q_max = length(y1)-300;
+N = length(q_min:q_max)-1;
+
+Ryy = zeros(2,401*2);
+for i = 1:401
+    %k in [-200, 200]
+    k = i-201;
+    
+    %preallocation
+    sum_Ryy = zeros(2,2);
+    
+    for q = q_min: q_max
+        %summing each uk+q*uq^T over q set
+        sum_Ryy = 1/(N)*(y_scale(:,k+q)*y_scale(:,q)')+sum_Ryy;
+    end
+    Ryy(:,2*i-1:2*i) = sum_Ryy;
+end
+Ryy_0 = Ryy(:,401:402);
+
+%% Task 5
+%RMS value of output when u is zero mean unit variance noise
+y_rms = sqrt(trace(Ryy_0));
+fprintf('RMS value of scaled output y = %4.4f\n',y_rms);
+
+%||P||H2 from 7 state model
+ns = 7;
+[A7,B7,C7,D7] = model_generator(H100,Htil,ns);
+
+P_norm9 = 0;
+for k = 1: length(u1)
+    P_norm9 = P_norm9 + trace(B7'*(A7')^k*(C7')*C7*(A7^k)*B7);
+end
+P_norm9 = sqrt(P_norm9);
+fprintf('||P||H2 using State Space Model Eqn (9) = %4.4f\n',P_norm9);
+
+P_norm10 = 0;
+for k = 1: length(u1)
+    P_norm10 = P_norm10 + trace(C7*(A7^k)*B7*(B7')*(A7')^k*C7');
+end
+P_norm10 = sqrt(P_norm10);
+fprintf('||P||H2 using State Space Model Eqn (10) = %4.4f\n',P_norm10);
+
+%||P||H2 from discrete time pulse response
+y_imp = [y11 y12; y21 y22];
+P_norm8 = 0; 
+for k = 1: length(u1)
+    P_norm8 = P_norm8 + trace(y_imp(:,2*k-1:2*k)'*y_imp(:,2*k-1:2*k));
+end
+P_norm8 = sqrt(P_norm8);
+fprintf('||P||H2 using discrete time pulse response y Eqn (8) = %4.4f\n',...
+        P_norm8);
+
