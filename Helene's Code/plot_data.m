@@ -87,8 +87,8 @@ figure
 for k = 1:length(ex)
     Hex = hankel_n(u1,y1,y2,ex(k));
     svd_vec = svd(Hex);
-    k = 1:1:40;
-    plot(k,svd_vec(k),'*');
+    j = 1:1:40;
+    plot(j,svd_vec(j),'*');
     hold on;
     set(gca,'YScale', 'log');
     axis([0 40 10e-4 10e-1]);
@@ -648,3 +648,40 @@ P_norm8 = sqrt(P_norm8);
 fprintf('||P||H2 using discrete time pulse response y Eqn (8) = %4.4f\n',...
         P_norm8);
 
+%% Task 6 
+plot_6fresp = true;
+%using bisection
+svd_vec = svd(H100); ns = 7;
+gam = [svd_vec(1),2*sum(svd_vec)];
+tol = 0.001;
+[Hinf, wmax] = Hinf_norm_d(A7,B7,C7,D7,gam,tol,ts);
+
+%frequency response plot using model
+
+P = ss(A7,B7,C7,D7,ts);
+[SV,W] = sigma(P,2*pi*w_span); hold on;
+figure;
+plot(W/(2*pi),20*log10(SV(1,:)));  hold on;
+plot(W/(2*pi),20*log10(SV(2,:))); hold on;
+
+y11f = fft(y11)./fft(u1);
+y21f = fft(y21)./fft(u1);
+y12f = fft(y11)./fft(u2);
+y22f = fft(y22)./fft(u2);
+
+N = length(y11f);
+om = [0:N-1]/(ts*N);
+sig = zeros(2,length(om));
+for i = 1:length(om)
+    H = [y11f(i) y12f(i); y21f(i) y22f(i)];
+    sig(:,i) = svd(H);
+end
+
+plot(om,20*log10(sig(1,:)));  hold on;
+plot(om,20*log10(sig(2,:))); hold on;
+plot(wmax/(2*pi),20*log10(Hinf),'k*')
+legend('y1 model','y2 model','y1 data','y2 data','Hinf','Location','southwest');
+axis([0,20,-55, -5])
+set(gca,'XScale', 'log');
+xlabel('\omega (Hz)');
+ylabel('Singular Values');
