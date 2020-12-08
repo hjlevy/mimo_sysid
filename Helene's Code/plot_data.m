@@ -4,15 +4,15 @@ clear; close all; clc;
 
 %plotting commands %change to false if don't want to plot
 %task 1 plots
-plot_resp = false; 
+plot_resp = true; 
 plot_fresp = false; 
 
 %task 2 plots
-tzero_plot = true;
+tzero_plot = false;
 
 %task 4 plots
 plot_auto = false;
-plot_cross = false;
+plot_cross = true;
 
 %task 6 plots
 hinf_plot = false;
@@ -159,14 +159,15 @@ for i = 1:length(state_dim)
         %plotting each input/output response combo
         figure
         subplot(211)
-        plot(tsim,h1(1,:),'*',t,y11,'*')
+        plot(tsim,h1(1,:),'*',t,y11,'*');
         grid on
         xlim([0 2]);
         ylabel('y1');
         title(sprintf('Impulse Response of u1 with ns = %4d',nmod));
+        legend('model','data','Location','southeast');
 
         subplot(212)
-        plot(tsim,h1(2,:),'*',t,y21,'*')
+        plot(tsim,h1(2,:),'*',t,y21,'*');
         grid on
         xlim([0 2]);
         ylabel('y2');
@@ -174,14 +175,15 @@ for i = 1:length(state_dim)
 
         figure
         subplot(211)
-        plot(tsim,h2(1,:),'*',t,y12,'*')
+        plot(tsim,h2(1,:),'*',t,y12,'*');
         grid on
         xlim([0 2]);
         ylabel('y1');
         title(sprintf('Impulse Response pf u2 with ns = %4d',nmod));
+        legend('model','data','Location','southeast');
 
         subplot(212)
-        plot(tsim,h2(2,:),'*',t,y22,'*')
+        plot(tsim,h2(2,:),'*',t,y22,'*');
         grid on
         xlim([0 2]);
         ylabel('y2');
@@ -354,7 +356,7 @@ lamc = log(lam)./ts;
 
 if(tzero_plot)
     figure;
-    plot(real(lamc),imag(lamc),'rx'); hold on;
+    plot(real(lamc),imag(lamc),'rx'); 
     axis square ;grid on;
     title('Continuous Eigenvalues');
 end
@@ -564,6 +566,7 @@ Tau = linspace(-0.2,2,length(Ryu)/2);
 %plotting cross correlation graphs
 if plot_cross
     figure;
+    subplot(211);
     %crosscorr y1u1
     plot(Tau,Ryu(1,1:2:end),'b*',t,y11,'r*'); 
     axis([0 1 -0.1 0.1]);
@@ -571,18 +574,9 @@ if plot_cross
     ylabel('y11');
     legend('Ryu','pulse exp');
     title('Cross Correlation y1,u1');
-
-    %crosscorr y1u2
-    figure;
-    plot(Tau,Ryu(1,2:2:end),'b*',t,y12,'r*'); 
-    axis([0 1 -0.1 0.1]);
-    xlabel('time');
-    ylabel('y12');
-    legend('Ryu','pulse exp');
-    title('Cross Correlation y1,u2');
-
+    
     %crosscorr y2u1
-    figure;
+    subplot(212);
     plot(Tau,Ryu(2,1:2:end),'b*',t,y21,'r*'); 
     axis([0 1 -0.1 0.1]);
     xlabel('time');
@@ -590,8 +584,19 @@ if plot_cross
     legend('Ryu','pulse exp');
     title('Cross Correlation y2,u1');
 
-    %crosscorr y2u2
+
+    %crosscorr y1u2
     figure;
+    subplot(211);
+    plot(Tau,Ryu(1,2:2:end),'b*',t,y12,'r*'); 
+    axis([0 1 -0.1 0.1]);
+    xlabel('time');
+    ylabel('y12');
+    legend('Ryu','pulse exp');
+    title('Cross Correlation y1,u2');
+
+    %crosscorr y2u2
+    subplot(212);
     plot(Tau,Ryu(2,2:2:end),'b*',t,y22,'r*');
     axis([0 1 -0.1 0.1]);
     xlabel('time');
