@@ -2,6 +2,19 @@
 %Helene Levy
 clear; close all; clc;
 
+%plotting commands %change to false if don't want to plot
+%task 1 plots
+plot_resp = false; 
+plot_fresp = false; 
+
+%task 4 plots
+plot_auto = true;
+plot_cross = true; 
+
+%task 6 plots
+hinf_plot = true;
+
+
 %% Loading and "massaging" initial data
 load u1_impulse.mat
 y11 = u1_impulse.Y(3).Data;
@@ -98,7 +111,7 @@ xlabel('singular value index');
 ylabel('Hankel singular value');
 legend("H20","H40","H80");
 
-%% Constructing Hankel Matrix and Plotting Singular Values
+%% Task 1 (cont) Constructing Hankel Matrix and Plotting Singular Values
 %constructing H100 matrix and plotting singular values
 [H100,Htil] = hankel_n(u1,y1,y2,100);
 svd_vec = svd(H100);
@@ -114,7 +127,6 @@ ylabel('Hankel singular value');
 title('Singular Values of H100');
 
 %% Simulating Impulse Response of Each State Model
-plot_resp = false; %change to false if don't want to plot
 %iterating through different state dims 
 state_dim = [6,7,10,40];
 An ={0}; Bn = {0}; Cn = {0}; Dn = {0};
@@ -175,9 +187,7 @@ for i = 1:length(state_dim)
 end
 fprintf('State dimension 6 has an inferior reproduction of the data\n');
 
-%% Creating and Plotting Model Frequency Response 
-plot_fresp = false; %change to false if don't want to plot
-
+%% Task 1 (cont) Creating and Plotting Model Frequency Response 
 %plotting bode diagrams for different model order
 N_w = 200;
 w_span = linspace(0,20,N_w); %omega span in hertz
@@ -264,7 +274,7 @@ for k = 1:length(state_dim)
 end
 
 
-%% Plotting Empirical Frequency Response 
+%% Task 1 (cont) Plotting Empirical Frequency Response 
 if(plot_fresp)
     figure (11);
     subplot(211)
@@ -351,7 +361,7 @@ fprintf('Their natural frequences are %4.3f and %4.3f Hz \n',...
 fprintf(['These frequencies look like the approximate cut-off ',... 
         'frequencies of the frequency responses\n\n']);
  
-%% Transmission Zeros for Each Channel 
+%% Task 2 (cont) Transmission Zeros for Each Channel 
 %creating b1 b2 and c1 c2
 b7_1 = B7(:,1); b7_2 = B7(:,2);
 c7_1 = C7(1,:); c7_2 = C7(2,:);
@@ -405,7 +415,7 @@ disp('Singular Values for Channel (2,2):'); disp(sig(1:4));
 
 %#4 WHAT ARE HANKEL SINGULAR VALUES OF EACH CHANNEL ?
 
-%% Pole-Zero plot for nmod = 8
+%% Task 2 (cont) Pole-Zero plot for nmod = 8
 ns = 8;
 [A8,B8,C8,D8] = model_generator(H100,Htil,ns);
 
@@ -451,8 +461,7 @@ y2 = y2 - mean(y2);
 u = [u1_rand;u2_rand];
 y = [y1;y2];
 
-%% Autocorrelation of u and plots
-plot_auto = true; %change to false if don't want plots
+%% Task 4 (cont) Autocorrelation of u and plots
 
 %preallocations
 % want k[-200,200] so give a 100 index offset on either end of data
@@ -517,8 +526,7 @@ V = Ruu(:,401:402);
 disp('Ruu[0]=');disp(V);
 fprintf('This indicates a variance of ~4 for each input channel\n');
 
-%% Cross correlation of u,y and plots
-plot_cross = true; %change to false if don't want plots
+%% Task 4 (cont) Cross correlation of u,y and plots
 
 %preallocations
 % want k[-200,200] so give a 100 index offset on either end of data
@@ -589,10 +597,8 @@ if plot_cross
     title('Cross Correlation y2,u2');
 end
 
-%% Autocorrelation of y (scaled)
+%% Task 4 (cont) Autocorrelation of y (scaled)
 y_scale = y/2;
-plot_auto = true; %change to false if don't want plots
-
 %preallocations
 % want k[-200,200] so give a 100 index offset on either end of data
 q_min = 300; 
@@ -615,7 +621,7 @@ for i = 1:401
 end
 Ryy_0 = Ryy(:,401:402);
 
-%% Task 5
+%% Task 5: H2 norm
 %RMS value of output when u is zero mean unit variance noise
 y_rms = sqrt(trace(Ryy_0));
 fprintf('RMS value of scaled output y = %4.4f\n',y_rms);
@@ -648,40 +654,53 @@ P_norm8 = sqrt(P_norm8);
 fprintf('||P||H2 using discrete time pulse response y Eqn (8) = %4.4f\n',...
         P_norm8);
 
-%% Task 6 
+%% Task 6: H infinity norm
+
 plot_6fresp = true;
-%using bisection
+%H infinity norm calculations
 svd_vec = svd(H100); ns = 7;
+%recommended bounds for gamma found online
 gam = [svd_vec(1),2*sum(svd_vec)];
-tol = 0.001;
+tol = 0.01;
 [Hinf, wmax] = Hinf_norm_d(A7,B7,C7,D7,gam,tol,ts);
+fprintf('Hinf norm = %4.3f = %4.3f db\n',Hinf,20*log10(Hinf));
+fprintf('where max singular value achieves largest value, w = %4.3f Hz\n', ...
+    wmax/(2*pi));
 
 %frequency response plot using model
-
 P = ss(A7,B7,C7,D7,ts);
 [SV,W] = sigma(P,2*pi*w_span); hold on;
-figure;
-plot(W/(2*pi),20*log10(SV(1,:)));  hold on;
-plot(W/(2*pi),20*log10(SV(2,:))); hold on;
+if hinf_plot
+    figure;
+    plot(W/(2*pi),20*log10(SV(1,:)));  hold on;
+    plot(W/(2*pi),20*log10(SV(2,:))); hold on;
+end
 
+%frequency response plot using pulse response data
 y11f = fft(y11)./fft(u1);
 y21f = fft(y21)./fft(u1);
 y12f = fft(y11)./fft(u2);
 y22f = fft(y22)./fft(u2);
 
+%forming frequency model values for each corresponding frequency
 N = length(y11f);
 om = [0:N-1]/(ts*N);
 sig = zeros(2,length(om));
 for i = 1:length(om)
     H = [y11f(i) y12f(i); y21f(i) y22f(i)];
+    %taking singular values of each H
     sig(:,i) = svd(H);
 end
 
-plot(om,20*log10(sig(1,:)));  hold on;
-plot(om,20*log10(sig(2,:))); hold on;
-plot(wmax/(2*pi),20*log10(Hinf),'k*')
-legend('y1 model','y2 model','y1 data','y2 data','Hinf','Location','southwest');
-axis([0,20,-55, -5])
-set(gca,'XScale', 'log');
-xlabel('\omega (Hz)');
-ylabel('Singular Values');
+%plotting frequency vs. singular values of pulse response data
+if hinf_plot
+    plot(om,20*log10(sig(1,:)));  hold on;
+    plot(om,20*log10(sig(2,:))); hold on;
+    plot(wmax/(2*pi),20*log10(Hinf),'k*'); hold on;
+    legend('y1 model','y2 model','y1 data','y2 data','Hinf','Location','southwest');
+    axis([0,20,-55, -5])
+    set(gca,'XScale', 'log');
+    xlabel('\omega (Hz)');
+    ylabel('Singular Values (dB)');
+    title('Singular Values of Frequency Response');
+end
