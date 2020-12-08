@@ -1,4 +1,4 @@
-function [z,lam] = tzero_lam_gen(A,B,C,D)
+function [z,lam] = tzero_lam_gen(A,B,C,D,plot_bool)
 ns = length(A); %state dimension
 n = ns + size(B,2); %# columns of M matrix
 
@@ -19,15 +19,18 @@ z = z(z_ind(end)+1:end); %removing inf values
 
 lam = eig(A);
 
-figure;
-%plotting transmission zeros and eigenvalues
-plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); 
-hold on;
+if (plot_bool)
+    figure;
+    %plotting transmission zeros and eigenvalues
+    plot(real(z),imag(z),'bo',real(lam),imag(lam),'rx'); 
+    hold on;
 
-%plotting circle radius 1
-th = linspace(0,2*pi); r = 1;
-x_circ = r*cos(th);
-y_circ = r*sin(th);
-plot(x_circ,y_circ,'k--');
-axis equal;grid on;
+    %plotting circle radius 1
+    th = linspace(0,2*pi); r = 1;
+    x_circ = r*cos(th);
+    y_circ = r*sin(th);
+    plot(x_circ,y_circ,'k--');
+    xlabel('Re'); ylabel('Im');
+    axis equal;grid on;
+end
 end

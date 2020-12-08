@@ -7,12 +7,15 @@ clear; close all; clc;
 plot_resp = false; 
 plot_fresp = false; 
 
+%task 2 plots
+tzero_plot = true;
+
 %task 4 plots
-plot_auto = true;
-plot_cross = true; 
+plot_auto = false;
+plot_cross = false;
 
 %task 6 plots
-hinf_plot = true;
+hinf_plot = false;
 
 
 %% Loading and "massaging" initial data
@@ -341,7 +344,7 @@ end
 %2.1 finding transmission zeros of state model 7
 ns = 7;
 [A7,B7,C7,D7] = model_generator(H100,Htil,ns);
-[z,lam] = tzero_lam_gen(A7,B7,C7,D7);
+[z,lam] = tzero_lam_gen(A7,B7,C7,D7,tzero_plot);
 title('Discrete Eigenvalues and Transmission Zeros');
 
 %2.3 continuous time eigenvalues
@@ -349,10 +352,12 @@ lamc = log(lam)./ts;
 %minimizing the omega by 2pik/ts for ones with imaginary part
 %frequency bounded by [-pi/ts; pi/ts] rad/s which they already are
 
-figure;
-plot(real(lamc),imag(lamc),'rx'); hold on;
-axis square ;grid on;
-title('Continuous Eigenvalues');
+if(tzero_plot)
+    figure;
+    plot(real(lamc),imag(lamc),'rx'); hold on;
+    axis square ;grid on;
+    title('Continuous Eigenvalues');
+end
 
 fprintf('From the set of lam_c we see there are two damped oscillators:\n')
 disp('lam_c =');disp(lamc(1:4));
@@ -367,7 +372,7 @@ b7_1 = B7(:,1); b7_2 = B7(:,2);
 c7_1 = C7(1,:); c7_2 = C7(2,:);
 
 %Channel (1,1) transmission zeros and eigenvalues
-[z11,lam11] = tzero_lam_gen(A7,b7_1,c7_1,0);
+[z11,lam11] = tzero_lam_gen(A7,b7_1,c7_1,0,tzero_plot);
 title(sprintf(['Channel (1,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 fprintf(['3 state model: one oscillator and '...
@@ -379,7 +384,7 @@ sig = svd(H_11);
 disp('Singular Values for Channel (1,1):'); disp(sig(1:3));
 
 %Channel (2,1) y2,u1
-[z21,lam21] = tzero_lam_gen(A7,b7_1,c7_2,0);
+[z21,lam21] = tzero_lam_gen(A7,b7_1,c7_2,0,tzero_plot);
 title(sprintf(['Channel (2,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 fprintf('2 state model: one LP and one HP filter in channel (2,1)\n');
@@ -390,7 +395,7 @@ sig = svd(H_21);
 disp('Singular Values for Channel (2,1):'); disp(sig(1:2));
 
 %Channel (1,2) y1,u2
-[z12,lam12] = tzero_lam_gen(A7,b7_2,c7_1,0);
+[z12,lam12] = tzero_lam_gen(A7,b7_2,c7_1,0,tzero_plot);
 title(sprintf(['Channel (1,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 fprintf(['3 state model: one oscillator and one '...
@@ -402,7 +407,7 @@ sig = svd(H_12);
 disp('Singular Values for Channel (1,2):'); disp(sig(1:3));
 
 %Channel (2,2) y2,u2
-[z22,lam22] = tzero_lam_gen(A7,b7_2,c7_2,0);
+[z22,lam22] = tzero_lam_gen(A7,b7_2,c7_2,0,tzero_plot);
 title(sprintf(['Channel (2,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 fprintf(['4 state model: one oscillator and one LP filter, '...
@@ -413,8 +418,6 @@ H_22 = hankel_1n(u2,y22,100,4);
 sig = svd(H_22);
 disp('Singular Values for Channel (2,2):'); disp(sig(1:4));
 
-%#4 WHAT ARE HANKEL SINGULAR VALUES OF EACH CHANNEL ?
-
 %% Task 2 (cont) Pole-Zero plot for nmod = 8
 ns = 8;
 [A8,B8,C8,D8] = model_generator(H100,Htil,ns);
@@ -424,22 +427,22 @@ b8_1 = B8(:,1); b8_2 = B8(:,2);
 c8_1 = C8(1,:); c8_2 = C8(2,:);
 
 %Channel (1,1) transmission zeros and eigenvalues
-[z11,lam11] = tzero_lam_gen(A8,b8_1,c8_1,0);
+[z11,lam11] = tzero_lam_gen(A8,b8_1,c8_1,0,tzero_plot);
 title(sprintf(['Channel (1,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
 %Channel (2,1) y2,u1
-[z21,lam21] = tzero_lam_gen(A8,b8_1,c8_2,0);
+[z21,lam21] = tzero_lam_gen(A8,b8_1,c8_2,0,tzero_plot);
 title(sprintf(['Channel (2,1): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
 %Channel (1,2) y1,u2
-[z12,lam12] = tzero_lam_gen(A8,b8_2,c8_1,0);
+[z12,lam12] = tzero_lam_gen(A8,b8_2,c8_1,0,tzero_plot);
 title(sprintf(['Channel (1,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
 %Channel (2,2) y2,u2
-[z22,lam22] = tzero_lam_gen(A8,b8_2,c8_2,0);
+[z22,lam22] = tzero_lam_gen(A8,b8_2,c8_2,0,tzero_plot);
 title(sprintf(['Channel (2,2): Discrete Eigenvalues and',...
     'Transmission Zeros for ns = %d'],ns));
 
