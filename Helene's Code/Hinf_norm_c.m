@@ -1,4 +1,5 @@
-function [H_infn,lam] = Hinf_norm_c(A,B,C,D,gam,tol)
+function [H_infn,nu] = Hinf_norm_c(A,B,C,D,gam,tol)
+%finding the Hinf norm and wmax of a continuous time system
 I = eye(size(D'*D));
 gamL = gam(1);
 gamU = gam(2);
@@ -21,5 +22,14 @@ while (gamH - gamL)/gamL > tol
     end
 end
 H_infn = gamma;
+
+%finding purely imaginary eigenvalue -> continuous time freq
+nu = 0;
+for k = 1:length(lam)
+    %if almost no real part
+    if  abs(real(lam(k))) < 1.0e-5
+        nu = abs(imag(lam(k)));
+    end
+end
 
 end

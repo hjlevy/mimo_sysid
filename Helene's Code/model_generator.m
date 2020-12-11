@@ -1,4 +1,6 @@
 function [Ass,Bss,Css,Dss] = model_generator(H,Htil,nmod)
+%generating a model of size nmod based on larger hankel matrices
+
 %taking the svd of the H100 matrix and decreasing to new state dim
 [U,S,V] = svd(H);
 Un = U(:,1:nmod); 

@@ -5,17 +5,17 @@ clear; close all; clc;
 %plotting commands %change to false if don't want to plot
 %task 1 plots
 plot_resp = true; 
-plot_fresp = false; 
+plot_fresp = true; 
 
 %task 2 plots
-tzero_plot = false;
+tzero_plot = true;
 
 %task 4 plots
-plot_auto = false;
+plot_auto = true;
 plot_cross = true;
 
 %task 6 plots
-hinf_plot = false;
+hinf_plot = true;
 
 
 %% Loading and "massaging" initial data
@@ -348,6 +348,8 @@ ns = 7;
 [A7,B7,C7,D7] = model_generator(H100,Htil,ns);
 [z,lam] = tzero_lam_gen(A7,B7,C7,D7,tzero_plot);
 title('Discrete Eigenvalues and Transmission Zeros');
+fprintf('transmission zeros of ns = %d: \n',ns);
+disp(z);
 
 %2.3 continuous time eigenvalues
 lamc = log(lam)./ts;
@@ -465,6 +467,9 @@ y2 = y2 - mean(y2);
 
 u = [u1_rand;u2_rand];
 y = [y1;y2];
+
+fprintf('Mean of each input channel: mean(u1) = %4.3f, mean(u2) = %4.3f\n',...
+        mean(u1_rand), mean(u2_rand));
 
 %% Task 4 (cont) Autocorrelation of u and plots
 
@@ -671,7 +676,7 @@ svd_vec = svd(H100); ns = 7;
 gam = [svd_vec(1),2*sum(svd_vec)];
 tol = 0.01;
 [Hinf, wmax] = Hinf_norm_d(A7,B7,C7,D7,gam,tol,ts);
-fprintf('Hinf norm = %4.3f = %4.3f db\n',Hinf,20*log10(Hinf));
+fprintf('\nHinf norm = %4.3f = %4.3f db\n',Hinf,20*log10(Hinf));
 fprintf('where max singular value achieves largest value, w = %4.3f Hz\n', ...
     wmax/(2*pi));
 
@@ -694,11 +699,21 @@ y22f = fft(y22)./fft(u2);
 N = length(y11f);
 om = [0:N-1]/(ts*N);
 sig = zeros(2,length(om));
+max_sig = 0; max_w = 0;
 for i = 1:length(om)
     H = [y11f(i) y12f(i); y21f(i) y22f(i)];
     %taking singular values of each H
     sig(:,i) = svd(H);
+    if max(sig(:,i)) > max_sig
+        max_sig = max(sig(1,i));
+        max_w = om(i);
+    end
 end
+
+fprintf('\nFrom data, max sigma = %4.3f = %4.3f db\n',max_sig,...
+        20*log10(max_sig));
+fprintf('where max singular value achieves largest value, w = %4.3f Hz\n', ...
+    max_w);
 
 %plotting frequency vs. singular values of pulse response data
 if hinf_plot

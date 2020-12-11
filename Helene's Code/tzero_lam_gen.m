@@ -1,4 +1,6 @@
 function [z,lam] = tzero_lam_gen(A,B,C,D,plot_bool)
+%finding the transmission zeros and eigenvalues based on system matrices
+
 ns = length(A); %state dimension
 n = ns + size(B,2); %# columns of M matrix
 
